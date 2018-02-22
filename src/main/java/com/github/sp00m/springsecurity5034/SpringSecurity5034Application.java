@@ -19,47 +19,47 @@ import static org.springframework.security.config.web.server.ServerHttpSecurity.
 import static org.springframework.security.core.userdetails.User.withUsername;
 import static org.springframework.web.reactive.function.server.RequestPredicates.GET;
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
-import static org.springframework.web.reactive.function.server.ServerResponse.ok;
 
 @SpringBootApplication
 @EnableWebFluxSecurity
 @EnableReactiveMethodSecurity
 public class SpringSecurity5034Application {
 
-	public static void main(String[] args) {
-		SpringApplication.run(SpringSecurity5034Application.class, args);
-	}
-	
-	@Bean
-	public ReactiveUserDetailsService userDetailsService() {
-		UserDetails username = withUsername("username").password("password").roles("USER").build();
-		return new MapReactiveUserDetailsService(username);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(SpringSecurity5034Application.class, args);
+    }
 
-	@Bean
-	public ReactiveAuthenticationManager authenticationManager(ReactiveUserDetailsService userDetailsService) {
-		UserDetailsRepositoryReactiveAuthenticationManager authenticationManager = new UserDetailsRepositoryReactiveAuthenticationManager(userDetailsService);
-		authenticationManager.setPasswordEncoder(NoOpPasswordEncoder.getInstance());
-		return authenticationManager;
-	}
+    @Bean
+    public ReactiveUserDetailsService userDetailsService() {
+        UserDetails username = withUsername("username").password("password").roles("USER").build();
+        return new MapReactiveUserDetailsService(username);
+    }
 
-	@Bean
-	public SecurityWebFilterChain securityWebFilterChain(ReactiveAuthenticationManager authenticationManager) {
-		return http()
-				.authenticationManager(authenticationManager)
-				.csrf().disable()
-				.httpBasic().and()
-				.build();
-	}
+    @Bean
+    public ReactiveAuthenticationManager authenticationManager(ReactiveUserDetailsService userDetailsService) {
+        UserDetailsRepositoryReactiveAuthenticationManager authenticationManager = new UserDetailsRepositoryReactiveAuthenticationManager(userDetailsService);
+        authenticationManager.setPasswordEncoder(NoOpPasswordEncoder.getInstance());
+        return authenticationManager;
+    }
 
-	@Bean
-	public RouterFunction<ServerResponse> endpoint(SimpleService service) {
-		return route(
-				GET("/hello"),
-				request -> service
-                        .getProtectedHello()
-                        .transform(hello -> ok().body(hello, String.class))
-		);
-	}
-	
+    @Bean
+    public SecurityWebFilterChain securityWebFilterChain(ReactiveAuthenticationManager authenticationManager) {
+        return http()
+                .authenticationManager(authenticationManager)
+                .csrf().disable()
+                .httpBasic().and()
+                .build();
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> hello(HelloHandler handler) {
+        return route(
+                GET("/sync-hello"),
+                handler::syncHello
+        ).andRoute(
+                GET("/async-hello"),
+                handler::asyncHello
+        );
+    }
+
 }
